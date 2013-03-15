@@ -1,0 +1,208 @@
+#include <string.h>
+
+#include "handle.h"
+#include "error.h"
+#include "data.h"
+#include "service.h"
+
+int nspire_file_write(nspire_handle_t *handle, const char *path,
+		void* data, size_t size) {
+	int ret;
+	size_t len;
+	uint8_t buffer[254], *ptr = data;
+	uint16_t result;
+
+	if ( (ret = service_connect(handle, 0x4060)) )
+		return ret;
+
+	if ( (ret = data_build("hsw", buffer, sizeof(buffer), &len,
+			0x0301, path, size)) )
+		goto end;
+
+	if ( (ret = data_write(handle, buffer, len)) )
+		goto end;
+
+	if ( (ret = data_read(handle, buffer, sizeof(buffer))) )
+		goto end;
+
+	if (buffer[0] != 0x04) {
+		ret = -NSPIRE_ERR_INVALID;
+		goto end;
+	}
+
+	buffer[0] = 0x05;
+	while (size) {
+		len = (253 < size) ? 253 : size;
+
+		memcpy(buffer + 1, ptr, len);
+		if ( (ret = data_write(handle, buffer, len+1)) )
+			goto end;
+
+		size -= len;
+		ptr += len;
+	}
+
+	if ( (ret = data_read(handle, buffer, sizeof(buffer))) )
+		goto end;
+
+	if ( (ret = data_scan("h", buffer, sizeof(buffer), &result)) )
+		goto end;
+
+	ret = (result == 0xFF00) ? NSPIRE_ERR_SUCCESS : -NSPIRE_ERR_NONEXIST;
+end:
+	service_disconnect(handle);
+	return ret;
+}
+
+int nspire_file_read(nspire_handle_t *handle, const char *path,
+		void* data, size_t size, size_t *total_bytes) {
+	int ret;
+	size_t len;
+	uint8_t buffer[254], *ptr = data;
+	uint16_t result;
+	uint32_t data_len;
+
+	if ( (ret = service_connect(handle, 0x4060)) )
+		return ret;
+
+	if ( (ret = data_build("hs", buffer, sizeof(buffer), &len,
+			0x0701, path)) )
+		goto end;
+
+	if ( (ret = data_write(handle, buffer, len)) )
+		goto end;
+
+	if ( (ret = data_read(handle, buffer, sizeof(buffer))) )
+		goto end;
+
+	if ( (ret = data_scan("h000000000w", buffer, sizeof(buffer),
+			&result, &data_len)) )
+		goto end;
+
+	if (result != 0x0301) {
+		ret = -NSPIRE_ERR_NONEXIST;
+		goto end;
+	}
+
+	if ( (ret = data_write8(handle, 0x04)) )
+		goto end;
+
+	if (total_bytes) *total_bytes = 0;
+
+	while (data_len) {
+		len = (253 < data_len) ? 253 : data_len;
+
+		if ( (ret = data_read(handle, buffer, len+1)) )
+			goto end;
+
+		if (size) {
+			size_t to_copy = len < size ? len : size;
+			memcpy(ptr, buffer + 1, to_copy);
+			size -= to_copy;
+
+			ptr += to_copy;
+		}
+
+		if (total_bytes) *total_bytes += len;
+		data_len -= len;
+	}
+
+	if ( (ret = data_write16(handle, 0xFF00)) )
+		goto end;
+
+	ret = NSPIRE_ERR_SUCCESS;
+end:
+	service_disconnect(handle);
+	return ret;
+}
+
+int nspire_file_move(nspire_handle_t *handle,
+		const char *src, const char *dst) {
+	int ret;
+	size_t len;
+	uint16_t result;
+	uint8_t buffer[254];
+
+
+	if ( (ret = service_connect(handle, 0x4060)) )
+		return ret;
+
+	if ( (ret = data_build("hss0", buffer, sizeof(buffer), &len,
+			0x2101, src, dst)) )
+		goto end;
+
+	if ( (ret = data_write(handle, &buffer, len)) )
+		goto end;
+
+	if ( (ret = data_read(handle, &buffer, 2)) )
+		goto end;
+
+	if ( (ret = data_scan("h", buffer, sizeof(buffer), &result)) )
+		goto end;
+
+	ret = (result == 0xFF00) ? NSPIRE_ERR_SUCCESS : -NSPIRE_ERR_EXISTS;
+end:
+	service_disconnect(handle);
+	return ret;
+}
+
+int nspire_file_copy(nspire_handle_t *handle,
+		const char *src, const char *dst) {
+	int ret;
+	size_t len;
+	uint16_t result;
+	uint8_t buffer[254];
+
+
+	if ( (ret = service_connect(handle, 0x4060)) )
+		return ret;
+
+	if ( (ret = data_build("hss0", buffer, sizeof(buffer), &len,
+			0x0C01, src, dst)) )
+		goto end;
+
+	if ( (ret = data_write(handle, &buffer, len)) )
+		goto end;
+
+	if ( (ret = data_read(handle, &buffer, 2)) )
+		goto end;
+
+	if ( (ret = data_scan("h", buffer, sizeof(buffer), &result)) )
+		goto end;
+
+	ret = (result == 0xFF00) ? NSPIRE_ERR_SUCCESS : -NSPIRE_ERR_EXISTS;
+end:
+	service_disconnect(handle);
+	return ret;
+}
+
+int nspire_file_delete(nspire_handle_t *handle, const char *path) {
+	int ret;
+	size_t len;
+	uint16_t result;
+	uint8_t buffer[254];
+
+
+	if ( (ret = service_connect(handle, 0x4060)) )
+		return ret;
+
+	if ( (ret = data_build("hs0", buffer, sizeof(buffer), &len,
+			0x0901, path)) )
+		goto end;
+
+	if ( (ret = data_write(handle, &buffer, len)) )
+		goto end;
+
+	if ( (ret = data_read(handle, &buffer, 2)) )
+		goto end;
+
+	if ( (ret = data_scan("h", buffer, sizeof(buffer), &result)) )
+		goto end;
+
+	ret = (result == 0xFF00) ? NSPIRE_ERR_SUCCESS : -NSPIRE_ERR_EXISTS;
+end:
+	service_disconnect(handle);
+	return ret;
+}
+
+
