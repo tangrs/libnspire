@@ -2,6 +2,7 @@
 #define NSP_DIR_H
 
 #include "file.h"
+#include "handle.h"
 
 enum nspire_dir_type {
 	NSPIRE_FILE	= 0,

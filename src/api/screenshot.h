@@ -2,6 +2,7 @@
 #define NSP_SCREENSHOT_H
 
 #include <inttypes.h>
+#include "handle.h"
 
 struct nspire_image {
 	uint16_t width, height;

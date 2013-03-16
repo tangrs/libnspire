@@ -1,6 +1,9 @@
 #ifndef NSP_FILE_H
 #define NSP_FILE_H
 
+#include <string.h>
+#include "handle.h"
+
 int nspire_file_write(nspire_handle_t *, const char *, void*, size_t);
 int nspire_file_read(nspire_handle_t *handle, const char *path,
 		void* data, size_t size, size_t *read_bytes);

@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: LibNspire
+Description: Communication with TI-Nspire calculators
+Version: @VERSION@
+Requires: libusb-1.0
+Libs: -L${libdir} -lnspire
+Cflags: -I${includedir}/libnspire
