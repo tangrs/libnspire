@@ -4,6 +4,8 @@
 
 This is a library for communicating  with TI-Nspire calculators. It was created as a lightweight alternative to the Nspire-specific functions in TiLP (http://lpg.ticalc.org/prj_tilp/index.html). The goal is to have a small library with a simple API and minimal dependancies.
 
+At the moment, it is still in need of polishing up and documentation needs writing.
+
 Dependancies
 ==========
 
