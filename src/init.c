@@ -63,3 +63,8 @@ error:
 	free(h);
 	return ret;
 }
+
+void nspire_free(nspire_handle_t *ptr) {
+	usb_free_device(&ptr->device);
+	free(ptr);
+}

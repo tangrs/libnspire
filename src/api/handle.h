@@ -21,5 +21,6 @@
 typedef struct nspire_handle nspire_handle_t;
 
 int nspire_init(nspire_handle_t **ptr);
+void nspire_free(nspire_handle_t *ptr);
 
 #endif
