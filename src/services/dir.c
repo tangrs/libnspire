@@ -27,7 +27,7 @@
 static int dir_enum(nspire_handle_t *handle, struct nspire_dir_info **d) {
 	int ret;
 	char *name;
-	uint32_t size;
+	uint32_t size, date;
 	uint8_t is_dir;
 	struct nspire_dir_info *new_dir;
 	struct nspire_dir_item *current;
@@ -43,7 +43,7 @@ static int dir_enum(nspire_handle_t *handle, struct nspire_dir_info **d) {
 		return 1;
 
 	if ( (ret = data_scan("hbswwb0", buffer, sizeof(buffer),
-			NULL, NULL, &name, &size, NULL, &is_dir)) )
+			NULL, NULL, &name, &size, &date, &is_dir)) )
 		return ret;
 
 	new_dir = realloc(*d, sizeof(struct nspire_dir_info) +
@@ -57,6 +57,7 @@ static int dir_enum(nspire_handle_t *handle, struct nspire_dir_info **d) {
 	strncpy(current->name, name, sizeof(current->name));
 	current->name[sizeof(current->name)-1] = '\0';
 	current->size = size;
+	current->date = date;
 	current->type = is_dir;
 
 	return NSPIRE_ERR_SUCCESS;
@@ -179,6 +180,48 @@ int nspire_dir_delete(nspire_handle_t *handle, const char *path) {
 		goto end;
 
 	ret = (result == 0xFF00) ? NSPIRE_ERR_SUCCESS : -NSPIRE_ERR_NONEXIST;
+end:
+	service_disconnect(handle);
+	return ret;
+}
+
+int nspire_attr(nspire_handle_t *handle, const char *path,
+		struct nspire_dir_item *info) {
+	int ret;
+	size_t len;
+	uint8_t is_dir, buffer[254];
+	uint16_t result;
+	uint32_t size, date;
+
+	if ( (ret = service_connect(handle, 0x4060)) )
+		return ret;
+
+	if ( (ret = data_build("hs0", buffer, sizeof(buffer), &len,
+			0x2001, path)) )
+		goto end;
+
+	if ( (ret = data_write(handle, buffer, len)) )
+		goto end;
+
+	if ( (ret = data_read(handle, buffer, sizeof(buffer))) )
+		goto end;
+
+	if (buffer[0] != 0x20) {
+		ret = -NSPIRE_ERR_NONEXIST;
+		goto end;
+	}
+
+	if ( (ret = data_scan("bwwb0", buffer, sizeof(buffer),
+			NULL, &size, &date, &is_dir)) )
+		goto end;
+
+	strncpy(info->name, path, sizeof(info->name));
+	info->name[sizeof(info->name)-1] = '\0';
+	info->size = size;
+	info->date = date;
+	info->type = is_dir;
+
+	ret = NSPIRE_ERR_SUCCESS;
 end:
 	service_disconnect(handle);
 	return ret;
