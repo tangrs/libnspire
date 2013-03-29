@@ -157,7 +157,7 @@ int nspire_file_move(nspire_handle_t *handle,
 	if ( (ret = data_scan("h", buffer, sizeof(buffer), &result)) )
 		goto end;
 
-	ret = (result == 0xFF00) ? NSPIRE_ERR_SUCCESS : -NSPIRE_ERR_EXISTS;
+	ret = (result == 0xFF00) ? NSPIRE_ERR_SUCCESS : -NSPIRE_ERR_INVALID;
 end:
 	service_disconnect(handle);
 	return ret;
@@ -187,7 +187,7 @@ int nspire_file_copy(nspire_handle_t *handle,
 	if ( (ret = data_scan("h", buffer, sizeof(buffer), &result)) )
 		goto end;
 
-	ret = (result == 0xFF00) ? NSPIRE_ERR_SUCCESS : -NSPIRE_ERR_EXISTS;
+	ret = (result == 0xFF00) ? NSPIRE_ERR_SUCCESS : -NSPIRE_ERR_INVALID;
 end:
 	service_disconnect(handle);
 	return ret;
